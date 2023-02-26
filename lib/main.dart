@@ -1,9 +1,16 @@
+import 'dart:async';
+import 'dart:io';
 import 'dart:math';
-
+import 'dart:ui';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kittybuddyflutter/phrases.dart';
 import 'package:text_to_speech/text_to_speech.dart';
+
+var globalWidth = 300.0;
+var globalHeight = 300.0;
+var mouth = 5.0;
 
 void main() {
   runApp(const MyApp());
@@ -18,15 +25,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
@@ -36,16 +34,6 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -56,18 +44,15 @@ class _MyHomePageState extends State<MyHomePage> {
   final String defaultLanguage = 'en-GB';
   final _random = Random();
   TextToSpeech tts = TextToSpeech();
-
   String text = '';
   double volume = .5; // Range: 0-1
-  double rate = 1.0; // Range: 0-2
+  double rate = .9; // Range: 0-2
   double pitch = .8; // Range: 0-2
-
   String? language;
   String? languageCode;
   List<String> languages = <String>[];
   List<String> languageCodes = <String>[];
   String? voice;
-
   TextEditingController textEditingController = TextEditingController(text: "i am a cat");
 
   @override
@@ -109,7 +94,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<String?> getVoiceByLang(String lang) async {
     final List<String>? voices = await tts.getVoiceByLang(languageCode!);
+
     if (voices != null && voices.isNotEmpty) {
+      if( voices.contains('en-GB') ){
+          return 'en-GB';
+      }
       return voices.first;
     }
     return null;
@@ -128,16 +117,27 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Center(
               child: Column(
                 children: <Widget>[
-                  Image.asset('assets/kitsune.png'),
+                  Stack(
+                    children: <Widget>[
+                      Image.asset('assets/kitsune.png'),
+                      CustomPaint(
+                        painter: OpenPainter(),
+                      ),
+                    ],
+                  ),
+
                   const SizedBox(
                     height: 20,
                   ),
                   Row(
                     children: <Widget>[
+
                       SizedBox(
                         width: MediaQuery.of(context).size.width * .9,
-                        child: Text(
+                        child: AutoSizeText(
                           text,
+                          style: TextStyle(fontSize: 30),
+                          maxLines: 1,
                         ),
                       ),
                     ],
@@ -175,7 +175,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   bool get supportPause => defaultTargetPlatform != TargetPlatform.android;
-
   bool get supportResume => defaultTargetPlatform != TargetPlatform.android;
 
   void speak() {
@@ -188,12 +187,58 @@ class _MyHomePageState extends State<MyHomePage> {
     tts.speak(text);
   }
   void sayThis(String thisString ) {
+    print("start animation");
     tts.setVolume(volume);
     tts.setRate(rate);
     if (languageCode != null) {
       tts.setLanguage(languageCode!);
     }
     tts.setPitch(pitch);
+    animate(thisString);
     tts.speak(thisString);
+    print("stop animation");
   }
+
+  void animate(String thisString) async {
+    var seconds = 50;
+    var x = 0;
+    Timer _timer;
+    int _start = 50;
+    const oneSec = const Duration(milliseconds: 100);
+    _timer = new Timer.periodic(
+      oneSec,
+          (Timer timer) {
+        if (_start == 0) {
+          setState(() {
+            timer.cancel();
+            mouth = 5.00;
+          });
+        } else {
+          _start = _start - 1;
+          setState(() {
+            mouth = (sin(DateTime
+                .now()
+                .millisecondsSinceEpoch)).abs() * 20.0;
+          });
+        }
+      },
+    );
+  }
+}
+
+class OpenPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    globalWidth = window.physicalSize.width as double;
+    globalHeight = window.physicalSize.height as double;
+    var paint1 = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.fill;
+    Rect myRect = Offset(globalWidth/2.9, globalHeight/4.27) & Size(20.0, mouth);
+    canvas.drawOval(myRect, paint1);
+//    canvas.drawCircle(Offset(400, 200), 50, paint1);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
