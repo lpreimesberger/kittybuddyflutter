@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
+import 'dart:convert' show jsonDecode, utf8;
+//import 'dart:ffi';
 import 'package:http/http.dart' as http;
 import 'dart:math';
 import 'dart:ui';
@@ -74,7 +75,10 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final String defaultLanguage = 'en-GB';
   final _random = Random();
-  String text = '';
+  int strength = 0;
+  double temperature = 0.0;
+  double distance = 0.0;
+  String text = 'booting...';
   double volume = .5; // Range: 0-1
   double rate = .9; // Range: 0-2
   double pitch = .8; // Range: 0-2
@@ -83,6 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<String> languages = <String>[];
   List<String> languageCodes = <String>[];
   String? voice;
+  Map<String,double> playTime = <String,double>{};
   TextEditingController textEditingController = TextEditingController(text: "i am a cat");
 
   @override
@@ -96,6 +101,28 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> initLanguages() async {
+        setState(() {
+          text = "frazoj por hooman konverti";
+        });
+        var l = phrases.length;
+        for(var i = 0; i < l; i++){
+          setState(() {
+            text = "frazoj por hooman konverti $i / $l";
+          });
+          print("kaŝmemoro " + phrases[i]);
+          var speak = Uri.http('localhost:8080', 'cache');
+          var x = await http.post(speak, body: phrases[i]);
+          if(x.statusCode != 200){
+            print("invalid return");
+            continue;
+          }
+          var content = x.body;
+          playTime[phrases[i]] = double.parse(content);
+    }
+        setState(() {
+          text = "kaŝmemoro kompleta";
+        });
+
   }
 
   Future<String?> getVoiceByLang(String lang) async {
@@ -105,13 +132,25 @@ class _MyHomePageState extends State<MyHomePage> {
     while(true){
       var url = Uri.http('localhost:8080', 'events');
       try {
-        var response = await http.read(url);
-        if(response.isNotEmpty) {
+        var qqq = await http.get(url);
+//        var response = await http.read(url);
+        if(qqq.statusCode == 200 && qqq.body.isNotEmpty) {
           // python, bah
-          response = response.replaceFirst("b'", "").replaceFirst("'", "");
-          print('Response status: ${response}');
 
-          Map<String, dynamic> user = jsonDecode(response);
+          print(qqq.headers);
+          if(qqq.headers['x-strength'] != null){
+            print(qqq.headers['x-strength']);
+            strength = int.parse(qqq.headers['x-strength']!);
+          }
+          if(qqq.headers['x-temperature'] != null){
+            print(qqq.headers['x-temperature']);
+            temperature = double.parse(qqq.headers['x-temperature']!);
+          }
+          if(qqq.headers['x-distance'] != null){
+            print(qqq.headers['x-distance']);
+            distance = double.parse(qqq.headers['x-distance']!);
+          }
+          Map<String, dynamic> user = jsonDecode(qqq.body.replaceFirst("b'", "").replaceFirst("'", ""));
           var hooman = Hooman.fromJson(user);
           // {"eventtype":"hooman","hooman_id":"", "hooman_name":"", "hooman_likes":""}
           if(hooman.eventtype == "hooman"){
@@ -131,7 +170,6 @@ class _MyHomePageState extends State<MyHomePage> {
       } catch(e){
         print(e);
       }
-      print('listener zzz');
     }
   }
 
@@ -140,10 +178,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        backgroundColor: Colors.black38,
-
+        backgroundColor: Colors.black,
         appBar: AppBar(
-          title: const Text('Kitsune Meat World Extension 2023.1'),
+          title: const Text('Kitsune Viandmonda Etendo 2023.1'),
         ),
         body: SingleChildScrollView(
           child: Padding(
@@ -154,15 +191,18 @@ class _MyHomePageState extends State<MyHomePage> {
                 children: <Widget>[
                   Stack(
                     children: <Widget>[
-                      Image.asset('assets/kitsune.png', height: 600),
+                      Image.asset('assets/kitsune.png', height: 500),
                       CustomPaint(
                         painter: OpenPainter(),
                       ),
                       Column(children: [
-                        Text("Hoomans : ${hoomans}"),
-                        Text("Carriers: ${hoomansv2}"),
-                        Text("X       : ${globalWidth}"),
-                        Text("Y       : ${globalHeight}"),
+                        Text("hoomanoj/${hoomans}", style: TextStyle(fontFamily: "vt"),),
+                        Text("bufrigita/${hoomansv2}", style: TextStyle(fontFamily: "vt"),),
+                        Text("X/${globalWidth}", style: TextStyle(fontFamily: "vt"),),
+                        Text("Y/${globalHeight}", style: TextStyle(fontFamily: "vt"),),
+                        Text("distanco/${distance}", style: TextStyle(fontFamily: "vt"),),
+                        Text("amplitudo/${strength}", style: TextStyle(fontFamily: "vt"),),
+                        Text("temperaturo/${temperature} c", style: TextStyle(fontFamily: "vt"),),
                       ],)
                     ],
                   ),
@@ -178,7 +218,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         width: MediaQuery.of(context).size.width * .9,
                         child: AutoSizeText(
                           text,
-                          style: TextStyle(fontSize: 30),
+                          style: TextStyle(fontSize: 30, color: Colors.green, fontFamily: "vt"),
                           maxLines: 1,
                         ),
                       ),
@@ -194,11 +234,11 @@ class _MyHomePageState extends State<MyHomePage> {
                           padding: const EdgeInsets.only(right: 10),
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                                primary: Colors.grey,
+                                primary: Colors.black87,
                                 padding: EdgeInsets.symmetric(horizontal: 50, vertical: 20),
                                 textStyle: const TextStyle(
                                     fontSize: 30,
-                                    fontFamily: 'Robot',
+                                    fontFamily: 'vt',
                                     fontWeight: FontWeight.bold)),
                             child: const Text(''),
                             onPressed: () {
@@ -232,24 +272,22 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> sayThis(String thisString ) async {
     var speak = Uri.http('localhost:8080', 'say');
-
+    var animateTime = 2.0;
+    if(playTime.containsKey(thisString)){
+      animateTime = playTime[thisString]!;
+    }
     print("start animation");
-    Future.delayed(const Duration(milliseconds: 2400), () {
-      animate(thisString);
-
-    });
+      animate(animateTime);
     var x = await http.post(speak, body: thisString);
     print(x);
     print("stop animation");
   }
 
-  void animate(String thisString) async {
-    var seconds = 50;
-    var x = 0;
-    Timer _timer;
-    int _start = 50;
+  void animate(double speak) async {
+//    Timer _timer;
+    int _start = (speak * 10).toInt();
     const oneSec = const Duration(milliseconds: 100);
-    _timer = new Timer.periodic(
+    Timer _timer = new Timer.periodic(
       oneSec,
           (Timer timer) {
         if (_start == 0) {
@@ -278,7 +316,7 @@ class OpenPainter extends CustomPainter {
     var paint1 = Paint()
       ..color = Colors.black
       ..style = PaintingStyle.fill;
-    Rect myRect = Offset(globalWidth/4.6, globalHeight/3.60) & Size(20.0, mouth);
+    Rect myRect = Offset(globalWidth/5.2, globalHeight/4.30) & Size(20.0, mouth);
     canvas.drawOval(myRect, paint1);
 //    canvas.drawCircle(Offset(400, 200), 50, paint1);
   }

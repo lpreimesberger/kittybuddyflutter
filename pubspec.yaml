@@ -49,6 +49,9 @@ flutter:
     - family: Robot
       fonts:
         - asset: assets/SpaceMono-Regular.ttf
+    - family: vt
+      fonts:
+        - asset: assets/VT323-Regular.ttf
 
   uses-material-design: true
   assets:
