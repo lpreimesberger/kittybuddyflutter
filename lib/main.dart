@@ -20,24 +20,26 @@ var mouth = 5.0;
 class Hooman {
   final String eventtype;
   final String hooman_id;
-  final String hooman_name;
-  final String hooman_likes;
+  final String xnm;
+  final String xyr;
+  final String xis;
 
-  Hooman(this.eventtype, this.hooman_id, this.hooman_name, this.hooman_likes) {
+  Hooman(this.eventtype, this.hooman_id, this.xnm, this.xyr, this.xis) {
 
   }
 
   Hooman.fromJson(Map<String, dynamic> json)
       : eventtype = json['eventtype'],
-  hooman_name = json['hooman_name'],
-        hooman_likes = json['hooman_likes'],
-        hooman_id = json['hooman_id'];
+        hooman_id = json['hooman_id'],
+        xnm = json['xnm'],
+        xyr = json['xyr'],
+        xis = json['xis'];
 
   Map<String, dynamic> toJson() => {
     'eventtype': eventtype,
-    'hooman_id': hooman_id,
-    'hooman_name': hooman_name,
-    'hooman_likes': hooman_likes,
+    'xnm': xnm,
+    'xyr': xyr,
+    'xis': xis,
   };
 }
 
@@ -162,7 +164,7 @@ class _MyHomePageState extends State<MyHomePage> {
           }
           if(hooman.eventtype == "tap"){
             setState(() {
-              text = greet[_random.nextInt(greet.length)] + " Hooman ${hooman.hooman_name}." + vip[_random.nextInt(vip.length)];
+              text = greet[_random.nextInt(greet.length)] + " Hooman ${hooman.xnm}." + vip[_random.nextInt(vip.length)];
             });
             sayThis(text);
           }
@@ -196,13 +198,13 @@ class _MyHomePageState extends State<MyHomePage> {
                         painter: OpenPainter(),
                       ),
                       Column(children: [
-                        Text("hoomanoj/${hoomans}", style: TextStyle(fontFamily: "vt"),),
-                        Text("bufrigita/${hoomansv2}", style: TextStyle(fontFamily: "vt"),),
-                        Text("X/${globalWidth}", style: TextStyle(fontFamily: "vt"),),
-                        Text("Y/${globalHeight}", style: TextStyle(fontFamily: "vt"),),
-                        Text("distanco/${distance}", style: TextStyle(fontFamily: "vt"),),
-                        Text("amplitudo/${strength}", style: TextStyle(fontFamily: "vt"),),
-                        Text("temperaturo/${temperature} c", style: TextStyle(fontFamily: "vt"),),
+                        Text("hoomanoj/${hoomans}", style: const TextStyle(fontFamily: "vt"),),
+                        Text("bufrigita/${hoomansv2}", style: const TextStyle(fontFamily: "vt"),),
+                        Text("X/${globalWidth}", style: const TextStyle(fontFamily: "vt"),),
+                        Text("Y/${globalHeight}", style: const TextStyle(fontFamily: "vt"),),
+                        Text("distanco/${distance}", style: const TextStyle(fontFamily: "vt"),),
+                        Text("amplitudo/${strength}", style: const TextStyle(fontFamily: "vt"),),
+                        Text("temperaturo/${temperature} c", style: const TextStyle(fontFamily: "vt"),),
                       ],)
                     ],
                   ),
@@ -218,7 +220,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         width: MediaQuery.of(context).size.width * .9,
                         child: AutoSizeText(
                           text,
-                          style: TextStyle(fontSize: 30, color: Colors.green, fontFamily: "vt"),
+                          style: const TextStyle(fontSize: 30, color: Colors.green, fontFamily: "vt"),
                           maxLines: 1,
                         ),
                       ),
@@ -235,7 +237,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                                 primary: Colors.black87,
-                                padding: EdgeInsets.symmetric(horizontal: 50, vertical: 20),
+                                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
                                 textStyle: const TextStyle(
                                     fontSize: 30,
                                     fontFamily: 'vt',
@@ -275,6 +277,19 @@ class _MyHomePageState extends State<MyHomePage> {
     var animateTime = 2.0;
     if(playTime.containsKey(thisString)){
       animateTime = playTime[thisString]!;
+    } else {
+      setState(() {
+        text = "(bufrado)";
+      });
+      var speak = Uri.http('localhost:8080', 'cache');
+      var x = await http.post(speak, body: thisString);
+      if(x.statusCode != 200){
+        print("invalid return?");
+      }
+      var content = x.body;
+        playTime[thisString] = double.parse(content);
+
+
     }
     print("start animation");
       animate(animateTime);
